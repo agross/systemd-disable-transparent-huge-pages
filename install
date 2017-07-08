@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -e
+
+script_path="$(dirname "$(readlink --canonicalize-existing "$0")")"
+
+file="$script_path/disable-transparent-huge-pages.service"
+printf "Linking and enabling %s\n" "$file"
+systemctl link --force "$file"
+systemctl enable "$file"
+
+if systemctl is-active tuned.service > /dev/null; then
+  file="$script_path/tuned-profile.conf"
+  target='/etc/tuned/virtual-guest-nothp/tuned.conf'
+
+  mkdir --parents "$(dirname "$target")"
+  ln --symbolic --force "$file" "$target"
+
+  printf 'Enabling tuned profile %s\n' "$(basename "$(dirname "$target")")"
+  tuned-adm profile virtual-guest-nothp
+fi
